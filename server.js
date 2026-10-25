@@ -120,8 +120,8 @@ async function readFilters(query) {
   // Si se escribió un lugar pero no se eligió una sugerencia, se busca aquí.
   if (f.nearLabel && !geo.validCoord(f.lat, f.lon)) {
     try {
-      const [first] = await geo.search(f.nearLabel);
-      if (first) Object.assign(f, { lat: first.lat, lon: first.lon, nearLabel: first.label });
+      const best = await geo.bestPlace(f.nearLabel);
+      if (best) Object.assign(f, { lat: best.lat, lon: best.lon, nearLabel: best.label });
       else f.geoError = true;
     } catch {
       f.geoError = true;
