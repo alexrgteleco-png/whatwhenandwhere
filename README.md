@@ -6,12 +6,15 @@ App de eventos de [theaipeoplehub](https://theaipeoplehub.com): cualquier person
 - Node.js + Express, páginas renderizadas en el servidor (sin build).
 - Login único con **Keycloak** (OpenID Connect, Authorization Code + PKCE).
 - PostgreSQL en el esquema `www` (puede compartir base de datos con otras apps).
+- Mapas abiertos: **MapLibre GL** con teselas de **OpenFreeMap** (datos de OpenStreetMap), sin claves de API.
+- Autocompletado de direcciones con **Photon** (OpenStreetMap), a través de `/geo/search` y `/geo/reverse` con caché y límite de peticiones. `PHOTON_URL` permite usar un servidor Photon propio.
 
 ## Funcionalidades
 
 | Qué | Quién |
 | --- | --- |
-| Ver eventos próximos y pasados, buscar por nombre, lugar o descripción | Cualquiera |
+| Ver eventos próximos y pasados, buscar por texto y filtrar por ubicación (radio en km) y fechas | Cualquiera |
+| Ver los eventos en un mapa y cómo llegar | Cualquiera |
 | Ver el detalle, quién va y el foro | Cualquiera |
 | Crear un evento (queda apuntado automáticamente) | Usuarios con sesión |
 | Apuntarse / desapuntarse de eventos próximos | Usuarios con sesión |

@@ -193,3 +193,50 @@ input[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--
   .hide-sm { display: none; }
   .nav { gap: 12px; }
 }
+
+/* ---------- Filtros ---------- */
+.filters { margin: 24px 0 16px; padding: 16px; }
+.filters-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) 100px 150px 150px auto; gap: 12px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; position: relative; }
+.field label { font-weight: 600; font-size: 0.9rem; }
+select, input[type='date'] { width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.input-with-action { display: flex; gap: 6px; }
+.input-with-action input { flex: 1; min-width: 0; }
+.icon-button { flex-shrink: 0; width: 44px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--teal); font-size: 1.2rem; cursor: pointer; }
+.icon-button:hover { border-color: var(--teal); }
+.icon-button:disabled { opacity: 0.5; cursor: progress; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.chip { padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--ink); text-decoration: none; font-size: 0.9rem; font-weight: 500; background: var(--surface); }
+.chip:hover { border-color: var(--accent); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip-clear { color: var(--ink-soft); }
+.results-note { margin: 8px 0 16px; color: var(--ink-soft); font-weight: 500; }
+.tabs-note { margin-left: auto; align-self: center; color: var(--ink-soft); font-size: 0.9rem; padding: 0 8px; }
+.distance { color: var(--teal); font-weight: 600; }
+
+/* ---------- Sugerencias de direcciones ---------- */
+.geo-field { position: relative; display: flex; flex-direction: column; gap: 6px; }
+.suggestions { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(29, 27, 47, 0.14); max-height: 280px; overflow-y: auto; }
+.geo-input-wrap { position: relative; }
+.suggestions li { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 0.95rem; line-height: 1.35; }
+.suggestions li:hover, .suggestions li[aria-selected='true'] { background: var(--accent-soft); }
+
+/* ---------- Mapas ---------- */
+.map { width: 100%; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; background: var(--line); }
+.map-results { height: 340px; margin: 0 0 20px; }
+.map-detail { height: 300px; margin: 0 0 24px; }
+.map-form { height: 260px; margin-top: 8px; }
+.map-popup a { font-weight: 600; color: var(--ink); text-decoration: none; font-family: var(--font-body); }
+.map-popup a:hover { color: var(--accent); }
+.map-popup p { margin: 4px 0 0; color: #5c5873; font-size: 0.85rem; font-family: var(--font-body); }
+.maplibregl-popup-content { border-radius: 12px; padding: 12px 14px; }
+.hint { color: var(--ink-soft); font-size: 0.88rem; margin: 2px 0 0; }
+
+@media (max-width: 960px) {
+  .filters-grid { grid-template-columns: 1fr 1fr; }
+  .field-submit .button { width: 100%; }
+}
+@media (max-width: 560px) {
+  .filters-grid { grid-template-columns: 1fr; }
+  .map-results { height: 260px; }
+}

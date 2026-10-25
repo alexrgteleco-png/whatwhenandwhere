@@ -23,7 +23,20 @@ CREATE TABLE IF NOT EXISTS www.events (
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- Coordenadas del lugar (de OpenStreetMap vía Photon). Opcionales: un evento online no tiene.
+ALTER TABLE www.events ADD COLUMN IF NOT EXISTS lat double precision;
+ALTER TABLE www.events ADD COLUMN IF NOT EXISTS lon double precision;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'events_coords_check') THEN
+    ALTER TABLE www.events ADD CONSTRAINT events_coords_check CHECK (
+      (lat IS NULL AND lon IS NULL) OR (lat BETWEEN -90 AND 90 AND lon BETWEEN -180 AND 180)
+    );
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS events_starts_at_idx ON www.events (starts_at);
+CREATE INDEX IF NOT EXISTS events_coords_idx ON www.events (lat, lon) WHERE lat IS NOT NULL;
 CREATE INDEX IF NOT EXISTS events_owner_idx ON www.events (owner_id);
 
 CREATE TABLE IF NOT EXISTS www.attendees (

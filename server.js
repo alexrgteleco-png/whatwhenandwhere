@@ -10,6 +10,8 @@ const { mountAuthRoutes, requireLogin, isConfigured } = require('./lib/oidc');
 const { csrfToken, verifyCsrf, securityHeaders } = require('./lib/security');
 const models = require('./lib/models');
 const views = require('./lib/views');
+const geo = require('./lib/geo');
+const { TZ } = require('./lib/time');
 
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
@@ -27,6 +29,9 @@ app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 
 app.get('/healthz', (req, res) => res.send('ok'));
+
+// Búsqueda de direcciones (Photon) con caché; no necesita sesión.
+geo.mountGeoRoutes(app);
 
 app.use(
   session({
@@ -74,15 +79,73 @@ app.use(verifyCsrf);
 mountAuthRoutes(app, { onLogin: (claims) => models.upsertUser(claims) });
 
 // ---------- Listado ----------
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const RADII = [2, 5, 10, 25, 50, 100];
+
+// Fecha de hoy (YYYY-MM-DD) en hora de España, desplazada `days` días.
+function isoDay(days = 0) {
+  const d = new Date(Date.now() + days * 864e5);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
+function presetRange(when) {
+  if (when === 'hoy') return { from: isoDay(0), to: isoDay(0) };
+  if (when === 'semana') return { from: isoDay(0), to: isoDay(6) };
+  if (when === 'finde') {
+    const weekday = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(new Date());
+    const idx = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(weekday); // 0 = lunes
+    const toFriday = idx <= 4 ? 4 - idx : 0;
+    return { from: isoDay(idx === 6 ? 0 : toFriday), to: isoDay(6 - idx) };
+  }
+  return null;
+}
+
+async function readFilters(query) {
+  const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const f = {
+    search: str(query.q, 100),
+    past: query.past === '1',
+    when: ['hoy', 'finde', 'semana'].includes(query.when) ? query.when : '',
+    from: DATE_RE.test(query.from || '') ? query.from : '',
+    to: DATE_RE.test(query.to || '') ? query.to : '',
+    nearLabel: str(query.near, 150),
+    lat: Number(query.lat),
+    lon: Number(query.lon),
+    radius: RADII.includes(Number(query.r)) ? Number(query.r) : 10,
+    page: Math.max(1, Math.min(500, parseInt(query.page, 10) || 1)),
+    geoError: false,
+  };
+  if (f.when) Object.assign(f, presetRange(f.when));
+  if (f.from && f.to && f.to < f.from) [f.from, f.to] = [f.to, f.from];
+  // Si se escribió un lugar pero no se eligió una sugerencia, se busca aquí.
+  if (f.nearLabel && !geo.validCoord(f.lat, f.lon)) {
+    try {
+      const [first] = await geo.search(f.nearLabel);
+      if (first) Object.assign(f, { lat: first.lat, lon: first.lon, nearLabel: first.label });
+      else f.geoError = true;
+    } catch {
+      f.geoError = true;
+    }
+  }
+  f.near = f.nearLabel && geo.validCoord(f.lat, f.lon) ? { lat: f.lat, lon: f.lon, radiusKm: f.radius } : null;
+  return f;
+}
+
 app.get(
   '/',
   asyncRoute(async (req, res) => {
-    const search = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
-    const past = req.query.past === '1';
-    const page = Math.max(1, Math.min(500, parseInt(req.query.page, 10) || 1));
+    const filters = await readFilters(req.query);
     const userId = req.session.user ? req.session.user.id : null;
-    const { events, hasMore } = await models.listEvents({ userId, search, past, page });
-    res.send(String(views.eventsPage(res.locals.ctx, { events, search, past, page, hasMore })));
+    const { events, hasMore } = await models.listEvents({
+      userId,
+      search: filters.search,
+      past: filters.past,
+      from: filters.from || null,
+      to: filters.to || null,
+      near: filters.near,
+      page: filters.page,
+    });
+    res.send(String(views.eventsPage(res.locals.ctx, { events, filters, hasMore, radii: RADII })));
   })
 );
 
@@ -105,7 +168,13 @@ function readEventForm(body) {
     startsAt: String(body.startsAt || '').trim(),
     endsAt: String(body.endsAt || '').trim(),
     place: String(body.place || '').trim(),
+    lat: body.lat === '' || body.lat === undefined ? null : Number(body.lat),
+    lon: body.lon === '' || body.lon === undefined ? null : Number(body.lon),
   };
+  if (!geo.validCoord(data.lat, data.lon)) {
+    data.lat = null;
+    data.lon = null;
+  }
   const errors = {};
   if (data.title.length < 3) errors.title = 'Ponle un nombre de al menos 3 caracteres.';
   if (data.title.length > 120) errors.title = 'El nombre no puede pasar de 120 caracteres.';
@@ -163,6 +232,8 @@ app.get(
       title: event.title,
       description: event.description,
       place: event.place,
+      lat: event.lat,
+      lon: event.lon,
       startsAt: views.toInputValue(event.starts_at),
       endsAt: views.toInputValue(event.ends_at),
     };
