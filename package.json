@@ -1,0 +1,19 @@
+{
+  "name": "whatwhenandwhere",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WhatWhenAndWhere: crea eventos, apúntate y habla en su foro. Una app de theaipeoplehub.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "connect-pg-simple": "^10.0.0",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "pg": "^8.13.1"
+  }
+}
