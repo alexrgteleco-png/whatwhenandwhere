@@ -11,6 +11,7 @@ const { csrfToken, verifyCsrf, securityHeaders } = require('./lib/security');
 const models = require('./lib/models');
 const views = require('./lib/views');
 const geo = require('./lib/geo');
+const demo = require('./lib/demo');
 const { TZ } = require('./lib/time');
 
 const PORT = process.env.PORT || 3000;
@@ -360,6 +361,10 @@ app.use((err, req, res, next) => {
 });
 
 migrate()
+  .then(() =>
+    // Datos de prueba opcionales (DEMO_EVENTS=seed | clear). Un fallo aquí no impide arrancar.
+    demo.runFromEnv().catch((err) => console.error('Datos de prueba: error', err))
+  )
   .then(() => {
     app.listen(PORT, () => {
       console.log(`WhatWhenAndWhere escuchando en el puerto ${PORT}`);
